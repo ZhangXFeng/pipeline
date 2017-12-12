@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.straming;
+package com.zbj.finance.datapipeline.streaming;
 
 import kafka.serializer.StringDecoder;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -80,7 +80,7 @@ public class StreamingJob {
                         v1.foreachPartition(new VoidFunction<Iterator<String>>() {
                             @Override
                             public void call(Iterator<String> records) throws Exception {
-                                Writer writer = Writer.getWriter();
+                                Writer writer = WriterHolder.getWriter();
                                 while (records.hasNext()) {
                                     String record = records.next();
                                     writer.addRecord(record);

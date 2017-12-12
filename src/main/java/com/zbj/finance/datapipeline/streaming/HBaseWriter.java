@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.straming;
+package com.zbj.finance.datapipeline.streaming;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -30,7 +30,7 @@ public class HBaseWriter extends Writer {
         try {
             URL url = Thread.currentThread().getContextClassLoader().getResource("pipeline.properties");
             PROP.load(url.openStream());
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOG.error("load pipeline.properties error.", e);
             System.exit(1);
         }
@@ -138,14 +138,14 @@ public class HBaseWriter extends Writer {
             this.records = records;
             this.tableName = tableName;
             this.conn = conn;
-            this.setName("Processor");
+            this.setName("hbase-processor");
             this.setDaemon(true);
         }
 
 
         @Override
         public void run() {
-
+            LOG.info("hbase-processor start.");
             try {
                 final BufferedMutator.ExceptionListener listener = new BufferedMutator.ExceptionListener() {
                     @Override
@@ -179,6 +179,7 @@ public class HBaseWriter extends Writer {
 
                 }
             } catch (Exception e) {
+                LOG.info("hbase-processor start.");
                 LOG.error(e.getMessage(), e);
             }
         }
