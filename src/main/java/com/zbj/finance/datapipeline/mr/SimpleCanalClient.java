@@ -6,16 +6,12 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
+import java.util.concurrent.Future;
 
-/**
- * 单机模式的测试例子
- *
- * @author jianghang 2013-4-15 下午04:19:20
- * @version 1.0.4
- */
 public class SimpleCanalClient extends AbstractCanalClient {
     private static final Properties props = new Properties();
     private Producer<String, String> producer;
@@ -39,8 +35,12 @@ public class SimpleCanalClient extends AbstractCanalClient {
     @Override
     protected void pushToExternalSystem(String key, String record) {
         ProducerRecord producerRecord = new ProducerRecord(topic, key, record);
-        producer.send(producerRecord);
-        producer.flush();
+        Future<RecordMetadata> future = producer.send(producerRecord);
+        try {
+            future.get();
+        } catch (Exception e) {
+            logger.warn("future.get error. " + record, e);
+        }
     }
 
     public static void main(String args[]) throws Exception {

@@ -15,12 +15,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-/**
- * 测试基类
- *
- * @author jianghang 2013-4-15 下午04:17:12
- * @version 1.0.4
- */
 public class AbstractCanalClient {
 
     protected final static Logger logger = LoggerFactory.getLogger(AbstractCanalClient.class);

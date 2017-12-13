@@ -6,19 +6,17 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.util.Properties;
+import java.util.concurrent.Future;
 
-/**
- * 集群模式的测试例子
- *
- * @author jianghang 2013-4-15 下午04:19:20
- * @version 1.0.4
- */
+
 public class ClusterCanalClient extends AbstractCanalClient {
     private static final Properties props = new Properties();
     private Producer<String, String> producer;
     private String topic;
+    private HiveWriter hiveWriter;
 
     static {
         try {
@@ -32,13 +30,20 @@ public class ClusterCanalClient extends AbstractCanalClient {
         super(destination);
         this.topic = topic;
         this.producer = producer;
+        this.hiveWriter = new HiveWriter();
+        hiveWriter.start();
     }
 
     @Override
     protected void pushToExternalSystem(String key, String record) {
         ProducerRecord producerRecord = new ProducerRecord(topic, key, record);
-        producer.send(producerRecord);
-        producer.flush();
+        Future<RecordMetadata> future = producer.send(producerRecord);
+        hiveWriter.addRecord(record);
+        try {
+            future.get();
+        } catch (Exception e) {
+            logger.warn("future.get error. " + record, e);
+        }
     }
 
     public static void main(String args[]) {

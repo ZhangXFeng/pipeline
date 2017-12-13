@@ -36,9 +36,8 @@ public class HBaseWriter extends Writer {
         }
     }
 
-    HBaseWriter() {
+    public HBaseWriter() {
         init();
-        start();
     }
 
     @Override
@@ -179,8 +178,10 @@ public class HBaseWriter extends Writer {
 
                 }
             } catch (Exception e) {
-                LOG.info("hbase-processor start.");
                 LOG.error(e.getMessage(), e);
+            } finally {
+                LOG.info("hbase-processor down.");
+                System.exit(1);
             }
         }
     }

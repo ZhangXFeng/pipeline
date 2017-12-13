@@ -13,6 +13,7 @@ public class WriterHolder {
     static {
         try {
             writer = new HBaseWriter();
+            writer.start();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
             System.exit(1);

@@ -101,7 +101,7 @@ public class StreamingJob {
 
     private static JavaPairDStream<String, String> createStream(JavaStreamingContext jssc) {
         String topic = PROP.getProperty("kafka.topic");
-        String groupId = PROP.getProperty("kafka.group.id");
+        String groupId = PROP.getProperty("kafka.hbase.group.id");
         Integer receiverNum = Integer.parseInt(PROP.getProperty("streaming.receiver.num", 1 + ""));
         boolean isDirect = Boolean.parseBoolean(PROP.getProperty("isDirect", "true"));
         JavaPairDStream<String, String> messages;

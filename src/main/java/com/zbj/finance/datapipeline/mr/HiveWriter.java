@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.streaming;
+package com.zbj.finance.datapipeline.mr;
 
 import org.apache.hive.hcatalog.streaming.DelimitedInputWriter;
 import org.apache.hive.hcatalog.streaming.HiveEndPoint;
@@ -19,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Created by zhangxiaofeng on 2017/12/8.
  */
-public class HiveWriter extends Writer {
+public class HiveWriter {
     private static final Logger LOG = LoggerFactory.getLogger(HiveWriter.class);
     private LinkedBlockingQueue<String> records = new LinkedBlockingQueue<>(10000);
 
@@ -56,13 +56,11 @@ public class HiveWriter extends Writer {
         }
     }
 
-    HiveWriter() {
+    public HiveWriter() {
         this.processor = new Processor();
-        start();
     }
 
-    @Override
-    void addRecord(String record) {
+    public void addRecord(String record) {
         boolean isSuccess = false;
         while (!isSuccess) {
             try {
@@ -74,8 +72,7 @@ public class HiveWriter extends Writer {
         }
     }
 
-    @Override
-    void start() {
+    public void start() {
         this.processor.start();
     }
 
@@ -105,7 +102,7 @@ public class HiveWriter extends Writer {
         for (int i = 0; i < columnNames.length - 1; i++) {
             delimitedRecord.append(map.get(columnNames[i])).append(DELIMITER);
         }
-        delimitedRecord.append(columnNames[columnNames.length - 1]);
+        delimitedRecord.append(map.get(columnNames[columnNames.length - 1]));
 
         return delimitedRecord.toString();
     }
@@ -115,10 +112,8 @@ public class HiveWriter extends Writer {
         Map<String, String> map = new HashMap<>();
         for (int i = 1; i < a.length; i++) {
             String[] b = a[i].split(",", -1);
-            if (a[i].contains("update=true")) {
-                String[] c = b[0].split("=", -1);
-                map.put(c[0], c[1]);
-            }
+            String[] c = b[0].split("=", -1);
+            map.put(c[0], c[1]);
         }
         return map;
     }
@@ -127,9 +122,11 @@ public class HiveWriter extends Writer {
         String[] a = raw.split("\t");
         Map<String, String> map = new HashMap<>();
         for (int i = 1; i < a.length; i++) {
-            String[] b = a[i].split(",", -1);
-            String[] c = b[0].split("=", -1);
-            map.put(c[0], c[1]);
+            if (a[i].contains("update=true")) {
+                String[] b = a[i].split(",", -1);
+                String[] c = b[0].split("=", -1);
+                map.put(c[0], c[1]);
+            }
         }
         return map;
     }
@@ -141,16 +138,16 @@ public class HiveWriter extends Writer {
         Object[] kvs = updateKeyAndValue.entrySet().toArray();
         for (int i = 0; i < kvs.length - 1; i++) {
             Map.Entry<String, String> kv = (Map.Entry<String, String>) kvs[i];
-            updateSql.append(kv.getKey() + "=" + kv.getValue() + ", ");
+            updateSql.append(kv.getKey() + "='" + kv.getValue() + "', ");
         }
         Map.Entry<String, String> kv = (Map.Entry<String, String>) kvs[kvs.length - 1];
-        updateSql.append(kv.getKey() + "=" + kv.getValue());
+        updateSql.append(kv.getKey() + "='" + kv.getValue() + "'");
         updateSql.append(" where ");
         Map map = raw2Map(raw);
         for (int i = 0; i < primaryKeys.length - 1; i++) {
-            updateSql.append(primaryKeys[i] + " = " + map.get(primaryKeys[i]) + " and ");
+            updateSql.append(primaryKeys[i] + " = '" + map.get(primaryKeys[i]) + "' and ");
         }
-        updateSql.append(primaryKeys[primaryKeys.length - 1] + " = " + map.get(primaryKeys[primaryKeys.length - 1]));
+        updateSql.append(primaryKeys[primaryKeys.length - 1] + " = '" + map.get(primaryKeys[primaryKeys.length - 1]) + "'");
 
         return updateSql.toString();
     }
@@ -160,9 +157,9 @@ public class HiveWriter extends Writer {
         deleteSql.append("delete from ").append(tablename).append(" where ");
         Map map = raw2Map(raw);
         for (int i = 0; i < primaryKeys.length - 1; i++) {
-            deleteSql.append(primaryKeys[i] + " = " + map.get(primaryKeys[i]) + " and ");
+            deleteSql.append(primaryKeys[i] + " = '" + map.get(primaryKeys[i]) + "' and ");
         }
-        deleteSql.append(primaryKeys[primaryKeys.length - 1] + " = " + map.get(primaryKeys[primaryKeys.length - 1]));
+        deleteSql.append(primaryKeys[primaryKeys.length - 1] + " = '" + map.get(primaryKeys[primaryKeys.length - 1]) + "'");
         return deleteSql.toString();
     }
 
@@ -180,18 +177,18 @@ public class HiveWriter extends Writer {
             Connection sqlconn = null;
             try {
                 HiveEndPoint hep = new HiveEndPoint(metastoreUrl, database, tablename, null);
-                conn = hep.newConnection(true, "processor");
-                DelimitedInputWriter inputWriter = new DelimitedInputWriter(columnNames, DELIMITER, hep, conn);
+                conn = hep.newConnection(true);
+                DelimitedInputWriter inputWriter = new DelimitedInputWriter(columnNames, DELIMITER, hep);
                 sqlconn = DriverManager.getConnection(serverUrl, username, password);
 
                 while (true) {
                     String record = records.poll();
-                    System.out.println("receive : " + record);
                     if (null != record) {
                         String eventType = getEventType(record);
                         System.out.println("Eventtype = " + eventType);
                         if (eventType.equalsIgnoreCase("INSERT")) {
                             TransactionBatch tb = conn.fetchTransactionBatch(10, inputWriter);
+                            tb.beginNextTransaction();
                             String delimitedRecord = genDelimitedRecord(record);
                             System.out.println("insert record : " + delimitedRecord);
                             tb.write(delimitedRecord.getBytes());
@@ -230,6 +227,7 @@ public class HiveWriter extends Writer {
                     }
                 }
             } finally {
+                LOG.info("hive-processor down.");
                 System.exit(1);
             }
         }
