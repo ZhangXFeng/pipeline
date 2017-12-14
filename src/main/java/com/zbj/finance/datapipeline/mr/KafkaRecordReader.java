@@ -34,7 +34,10 @@ public class KafkaRecordReader extends RecordReader<Text, Text> {
         Properties kafkaParams = new Properties();
         kafkaParams.put("zookeeper.connect", prop.getProperty("kafka.zookeeper.connect"));
         kafkaParams.put("group.id", prop.getProperty("kafka.hive.group.id"));
-        kafkaParams.put("zookeeper.session.timeout.ms", "400");
+        kafkaParams.put("zookeeper.session.timeout.ms", "5000");
+        kafkaParams.put("zookeeper.connection.timeout.ms", "100000");
+        kafkaParams.put("rebalance.backoff.ms", "2000");
+        kafkaParams.put("rebalance.max.retries", "10");
         kafkaParams.put("zookeeper.sync.time.ms", "200");
         kafkaParams.put("auto.commit.interval.ms", "1000");
         kafkaParams.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
