@@ -26,6 +26,6 @@ public class KafkaInputFormat extends InputFormat<Text, Text> {
 
     @Override
     public RecordReader<Text, Text> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new KafkaRecordReader();
+        return new FakeRecordReader();
     }
 }

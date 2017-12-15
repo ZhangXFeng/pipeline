@@ -60,6 +60,10 @@ public class HiveWriter {
         this.processor = new Processor();
     }
 
+    public int getCachedSize() {
+        return records.size();
+    }
+
     public void addRecord(String record) {
         boolean isSuccess = false;
         while (!isSuccess) {
@@ -163,11 +167,21 @@ public class HiveWriter {
         return deleteSql.toString();
     }
 
+    public boolean isWriting() {
+        return processor.isWriting();
+    }
+
     class Processor extends Thread {
+
+        private boolean isWriting = false;
 
         Processor() {
             this.setDaemon(true);
             this.setName("hive-processor");
+        }
+
+        public boolean isWriting() {
+            return isWriting;
         }
 
         @Override
@@ -184,6 +198,7 @@ public class HiveWriter {
                 while (true) {
                     String record = records.poll();
                     if (null != record) {
+                        isWriting = true;
                         String eventType = getEventType(record);
                         System.out.println("Eventtype = " + eventType);
                         if (eventType.equalsIgnoreCase("INSERT")) {
@@ -209,7 +224,7 @@ public class HiveWriter {
                         } else {
                             LOG.warn("invalid eventtype. " + eventType);
                         }
-
+                        isWriting = false;
                     }
                 }
 

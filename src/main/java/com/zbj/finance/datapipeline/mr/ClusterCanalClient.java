@@ -16,7 +16,6 @@ public class ClusterCanalClient extends AbstractCanalClient {
     private static final Properties props = new Properties();
     private Producer<String, String> producer;
     private String topic;
-    private HiveWriter hiveWriter;
 
     static {
         try {
@@ -30,15 +29,12 @@ public class ClusterCanalClient extends AbstractCanalClient {
         super(destination);
         this.topic = topic;
         this.producer = producer;
-        this.hiveWriter = new HiveWriter();
-        hiveWriter.start();
     }
 
     @Override
     protected void pushToExternalSystem(String key, String record) {
         ProducerRecord producerRecord = new ProducerRecord(topic, key, record);
         Future<RecordMetadata> future = producer.send(producerRecord);
-        hiveWriter.addRecord(record);
         try {
             future.get();
         } catch (Exception e) {
