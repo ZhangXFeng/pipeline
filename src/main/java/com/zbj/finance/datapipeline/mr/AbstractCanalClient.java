@@ -109,7 +109,7 @@ public class AbstractCanalClient {
                         // }
                     } else {
                         printSummary(message, batchId, size);
-                        printEntry(message.getEntries());
+                        processEntry(message.getEntries());
                     }
 
                     connector.ack(batchId); // 提交确认
@@ -150,7 +150,7 @@ public class AbstractCanalClient {
                 + entry.getHeader().getExecuteTime() + "(" + format.format(date) + ")";
     }
 
-    protected void printEntry(List<Entry> entrys) {
+    protected void processEntry(List<Entry> entrys) {
         for (Entry entry : entrys) {
             long executeTime = entry.getHeader().getExecuteTime();
             long delayTime = new Date().getTime() - executeTime;

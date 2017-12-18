@@ -85,6 +85,20 @@ public class HBaseWriter extends Writer {
         return rowKeyBuilder.toString();
     }
 
+    private static String getEventType(String record) {
+        String eventType = null;
+        if (record.contains("eventType=INSERT")) {
+            eventType = "INSERT";
+        } else if (record.contains("eventType=UPDATE")) {
+            eventType = "UPDATE";
+        } else if (record.contains("eventType=DELETE")) {
+            eventType = "DELETE";
+        } else {
+            LOG.warn("invalid eventType. " + record);
+        }
+        return eventType;
+    }
+
     /**
      * database=ottertest,table=test,eventType=INSERT	id=28,type=int(11),update=true,isKey=true	name=王子,type=varchar(255),update=true,isKey=false	password=1234,type=varchar(255),update=true,isKey=false	email=sadqw,type=varchar(255),update=true,isKey=false	phone=1213,type=varchar(255),update=true,isKey=false	time=2017-12-07 10:45:45,type=datetime,update=true,isKey=false
      *
@@ -161,15 +175,17 @@ public class HBaseWriter extends Writer {
                 long lastPutTime = System.currentTimeMillis();
                 while (true) {
                     String record = records.poll();
+                    String eventType = null;
                     if (record != null) {
                         String rowKey = getRowKey(record);
                         Mutation mutation = str2Mutation(rowKey, record);
                         if (mutation == null) {
                             continue;
                         }
+                        eventType = getEventType(record);
                         mutations.add(mutation);
                     }
-                    if (mutations.size() == 1000 || System.currentTimeMillis() - lastPutTime > 2000) {
+                    if (mutations.size() == 1000 || System.currentTimeMillis() - lastPutTime > 2000 || "DELETE".equalsIgnoreCase(eventType) || "UPDATE".equalsIgnoreCase(eventType)) {
                         mutator.mutate(mutations);
                         mutator.flush();
                         lastPutTime = System.currentTimeMillis();
