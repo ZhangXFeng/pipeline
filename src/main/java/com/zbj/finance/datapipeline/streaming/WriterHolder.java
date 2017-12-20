@@ -8,19 +8,23 @@ import org.slf4j.LoggerFactory;
  */
 public class WriterHolder {
     private static final Logger LOG = LoggerFactory.getLogger(WriterHolder.class);
-    private static Writer writer;
+    private static Writer[] writers;
 
     static {
         try {
-            writer = new HBaseWriter();
-            writer.start();
+            int num = Integer.parseInt(StreamingJob.PROP.getProperty("hbase.writer.number", "1"));
+            writers=new Writer[num];
+            for (int i = 0; i < num; i++) {
+                writers[i] = new HBaseWriter();
+                writers[i].start();
+            }
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
             System.exit(1);
         }
     }
 
-    public static Writer getWriter() {
-        return writer;
+    public static Writer getWriter(String key) {
+        return writers[key.hashCode() % writers.length];
     }
 }

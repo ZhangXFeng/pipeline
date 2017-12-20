@@ -16,17 +16,18 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 
 /**
  * Created by zhangxiaofeng on 2017/12/13.
  */
 public class Kafka2HiveMapper extends Mapper<Text, Text, Text, Text> {
     private static final Logger LOG = LoggerFactory.getLogger(Kafka2HiveMapper.class);
-    private HiveWriter hiveWriter;
     private Thread reporter;
     private ConsumerIterator<String, String> it;
     private ConsumerConnector consumer;
     private ReentrantLock lock = new ReentrantLock();
+    private HiveWriter[] writers;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -63,6 +64,15 @@ public class Kafka2HiveMapper extends Mapper<Text, Text, Text, Text> {
         kafkaParams.put("auto.commit.interval.ms", "1000");
         kafkaParams.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         kafkaParams.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        prop.forEach(new BiConsumer<Object, Object>() {
+            @Override
+            public void accept(Object key, Object value) {
+                if (key.toString().startsWith("kafka.")) {
+                    String configName = key.toString().substring(6);
+                    kafkaParams.put(configName, value.toString());
+                }
+            }
+        });
         String topic = prop.getProperty("kafka.topic");
         consumer = kafka.consumer.Consumer.createJavaConsumerConnector(new ConsumerConfig(kafkaParams));
         Map<String, Integer> topicCountMap = new HashMap<>();
@@ -71,15 +81,22 @@ public class Kafka2HiveMapper extends Mapper<Text, Text, Text, Text> {
         Map<String, List<KafkaStream<String, String>>> consumerMap = consumer.createMessageStreams(topicCountMap, decoder, decoder);
         KafkaStream<String, String> stream = consumerMap.get(topic).get(0);
         it = stream.iterator();
-        hiveWriter = new HiveWriter();
-        hiveWriter.start();
+
+        int num = Integer.parseInt(prop.getProperty("hive.writer.number", "1"));
+        writers = new HiveWriter[num];
+        for (int i = 0; i < num; i++) {
+            writers[i] = new HiveWriter();
+            writers[i].start();
+            LOG.info("start hiveWriter, index " + i);
+        }
+
         TimerTask commitTask = new TimerTask() {
             @Override
             public void run() {
                 lock.lock();
                 try {
                     while (true) {
-                        if (hiveWriter.getCachedSize() == 0 && !hiveWriter.isWriting()) {
+                        if (getCachedSize() == 0 && !isWriting()) {
                             consumer.commitOffsets();
                             break;
                         }
@@ -100,12 +117,29 @@ public class Kafka2HiveMapper extends Mapper<Text, Text, Text, Text> {
     protected void map(Text key, Text value, Context context) throws IOException, InterruptedException {
         MessageAndMetadata messageAndMetadata = it.next();
         lock.lock();
-        hiveWriter.addRecord(messageAndMetadata.message().toString());
+        writers[messageAndMetadata.key().hashCode() % writers.length].addRecord(messageAndMetadata.message().toString());
         lock.unlock();
     }
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
+    }
+
+    private int getCachedSize() {
+        int size = 0;
+        for (int i = 0; i < writers.length; i++) {
+            size += writers[i].getCachedSize();
+        }
+        return size;
+    }
+
+    private boolean isWriting() {
+        for (int i = 0; i < writers.length; i++) {
+            if (writers[i].isWriting()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

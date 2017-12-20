@@ -3,6 +3,7 @@ package com.zbj.finance.datapipeline.streaming;
 import kafka.serializer.StringDecoder;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -62,36 +63,29 @@ public class StreamingJob {
                 jssc.checkpoint(checkpoint);
                 //实时变更流
                 JavaPairDStream<String, String> messages = createStream(jssc);
-                JavaDStream<String> values = messages.map(new Function<Tuple2<String, String>, String>() {
+                JavaPairDStream<String, String> values = messages.filter(new Function<Tuple2<String, String>, Boolean>() {
                     @Override
-                    public String call(Tuple2<String, String> v1) throws Exception {
-                        return v1._2;
-                    }
-                }).filter(new Function<String, Boolean>() {
-                    @Override
-                    public Boolean call(String v1) throws Exception {
-                        String temp = v1.split("\t", -1)[0];
+                    public Boolean call(Tuple2<String, String> tuple) throws Exception {
+                        String temp = tuple._2.split("\t", -1)[0];
                         return temp.contains(database) && temp.contains(tableName);
                     }
                 });
-                values.foreachRDD(new VoidFunction2<JavaRDD<String>, Time>() {
+                values.foreachRDD(new VoidFunction2<JavaPairRDD<String, String>, Time>() {
                     @Override
-                    public void call(JavaRDD<String> v1, Time v2) throws Exception {
-                        v1.foreachPartition(new VoidFunction<Iterator<String>>() {
+                    public void call(JavaPairRDD<String, String> kvRdd, Time time) throws Exception {
+                        kvRdd.foreachPartition(new VoidFunction<Iterator<Tuple2<String, String>>>() {
                             @Override
-                            public void call(Iterator<String> records) throws Exception {
-                                Writer writer = WriterHolder.getWriter();
-                                while (records.hasNext()) {
-                                    String record = records.next();
-                                    writer.addRecord(record);
+                            public void call(Iterator<Tuple2<String, String>> kvs) throws Exception {
+                                while(kvs.hasNext()){
+                                    Tuple2 kv=kvs.next();
+                                    String key=kv._1.toString();
+                                    String value=kv._2.toString();
+                                    WriterHolder.getWriter(key).addRecord(value);
                                 }
                             }
                         });
-
                     }
                 });
-
-
                 return jssc;
             }
         });
