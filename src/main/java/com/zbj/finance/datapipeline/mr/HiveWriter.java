@@ -112,7 +112,7 @@ public class HiveWriter {
     }
 
     private static Map raw2Map(String raw) {
-        String[] a = raw.split("\t");
+        String[] a = raw.split("\t", -1);
         Map<String, String> map = new HashMap<>();
         for (int i = 1; i < a.length; i++) {
             String[] b = a[i].split(",", -1);
@@ -123,7 +123,7 @@ public class HiveWriter {
     }
 
     private static Map getUpdateKeyAndValue(String raw) {
-        String[] a = raw.split("\t");
+        String[] a = raw.split("\t", -1);
         Map<String, String> map = new HashMap<>();
         for (int i = 1; i < a.length; i++) {
             if (a[i].contains("update=true")) {
@@ -167,6 +167,17 @@ public class HiveWriter {
         return deleteSql.toString();
     }
 
+    private static boolean isValid(String record) {
+        String[] a = record.split("\t", -1);
+        String[] b = a[0].split(",", -1);
+        String dbName = b[0].split("=", -1)[1];
+        String table = b[1].split("=", -1)[1];
+        if (dbName.equals(database) && table.equals(tablename)) {
+            return true;
+        }
+        return false;
+    }
+
     public boolean isWriting() {
         return processor.isWriting();
     }
@@ -197,7 +208,7 @@ public class HiveWriter {
 
                 while (true) {
                     String record = records.poll();
-                    if (null != record) {
+                    if (null != record && isValid(record)) {
                         isWriting = true;
                         String eventType = getEventType(record);
                         System.out.println("Eventtype = " + eventType);

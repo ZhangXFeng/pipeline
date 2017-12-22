@@ -4,7 +4,6 @@ import kafka.serializer.StringDecoder;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function0;
@@ -13,7 +12,6 @@ import org.apache.spark.api.java.function.VoidFunction2;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.Time;
-import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -66,8 +64,8 @@ public class StreamingJob {
                 JavaPairDStream<String, String> values = messages.filter(new Function<Tuple2<String, String>, Boolean>() {
                     @Override
                     public Boolean call(Tuple2<String, String> tuple) throws Exception {
-                        String temp = tuple._2.split("\t", -1)[0];
-                        return temp.contains(database) && temp.contains(tableName);
+                        String[] a = tuple._1.split("\\|", -1);
+                        return a[0].equals(database) && a[1].equals(tableName);
                     }
                 });
                 values.foreachRDD(new VoidFunction2<JavaPairRDD<String, String>, Time>() {
