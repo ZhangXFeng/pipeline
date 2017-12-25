@@ -21,7 +21,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class HiveWriter {
     private static final Logger LOG = LoggerFactory.getLogger(HiveWriter.class);
-    private LinkedBlockingQueue<String> records = new LinkedBlockingQueue<>(10000);
+    private LinkedBlockingQueue<String> records = new LinkedBlockingQueue<>(50);
 
     public static final Properties PROP = new Properties();
     public static String metastoreUrl;

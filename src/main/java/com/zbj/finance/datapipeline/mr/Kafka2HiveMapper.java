@@ -100,7 +100,7 @@ public class Kafka2HiveMapper extends Mapper<Text, Text, Text, Text> {
                             consumer.commitOffsets();
                             break;
                         }
-                        Thread.sleep(200);
+                        Thread.sleep(1000);
                     }
                 } catch (Exception e) {
                     LOG.error("sleep interrupted. ", e);
