@@ -11,6 +11,7 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -27,6 +28,7 @@ public class HiveWriter {
     public static String metastoreUrl;
     public static String database;
     public static String tablename;
+    public static String mysql_tableName;
     public static String[] columnNames;
     public static String[] primaryKeys;
     public static String DRIVER = "org.apache.hive.jdbc.HiveDriver";
@@ -43,6 +45,7 @@ public class HiveWriter {
             metastoreUrl = PROP.getProperty("hive.metastore.url");
             database = PROP.getProperty("hive.database.name");
             tablename = PROP.getProperty("hive.tablename");
+            mysql_tableName = PROP.getProperty("kafka.record.tablename");
             columnNames = PROP.getProperty("hive.table.columnNames").split(",", -1);
             primaryKeys = PROP.getProperty("hive.table.primaryKeys").split(",", -1);
             serverUrl = PROP.getProperty("hive.server.url");
@@ -172,7 +175,7 @@ public class HiveWriter {
         String[] b = a[0].split(",", -1);
         String dbName = b[0].split("=", -1)[1];
         String table = b[1].split("=", -1)[1];
-        if (dbName.equals(database) && table.equals(tablename)) {
+        if (dbName.equals(database) && table.equals(mysql_tableName)) {
             return true;
         }
         return false;
@@ -200,6 +203,7 @@ public class HiveWriter {
             System.out.println(this.getName() + " start.");
             StreamingConnection conn = null;
             Connection sqlconn = null;
+            Statement stmt = null;
             try {
                 HiveEndPoint hep = new HiveEndPoint(metastoreUrl, database, tablename, null);
                 conn = hep.newConnection(true);
@@ -211,25 +215,24 @@ public class HiveWriter {
                     if (null != record && isValid(record)) {
                         isWriting = true;
                         String eventType = getEventType(record);
-                        System.out.println("Eventtype = " + eventType);
                         if (eventType.equalsIgnoreCase("INSERT")) {
                             TransactionBatch tb = conn.fetchTransactionBatch(10, inputWriter);
                             tb.beginNextTransaction();
                             String delimitedRecord = genDelimitedRecord(record);
-                            System.out.println("insert record : " + delimitedRecord);
+                            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | insert record : " + delimitedRecord);
                             tb.write(delimitedRecord.getBytes());
                             tb.commit();
                             tb.close();
                         } else if (eventType.equalsIgnoreCase("UPDATE")) {
-                            Statement stmt = sqlconn.createStatement();
+                            stmt = sqlconn.createStatement();
                             String updateSql = genUpdateSql(record);
-                            System.out.println("update sql : " + updateSql);
+                            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | update sql : " + updateSql);
                             stmt.executeUpdate(updateSql);
                             stmt.close();
                         } else if (eventType.equalsIgnoreCase("DELETE")) {
-                            Statement stmt = sqlconn.createStatement();
+                            stmt = sqlconn.createStatement();
                             String deleteSql = genDeleteSql(record);
-                            System.out.println("delete sql : " + deleteSql);
+                            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | delete sql : " + deleteSql);
                             stmt.executeUpdate(deleteSql);
                             stmt.close();
                         } else {
@@ -242,6 +245,13 @@ public class HiveWriter {
             } catch (Throwable e) {
 
                 LOG.error("Processor down. ", e);
+                if (stmt != null) {
+                    try {
+                        stmt.close();
+                    } catch (Exception e2) {
+                        LOG.error("stmt close fail.", e2);
+                    }
+                }
                 if (conn != null) {
                     conn.close();
                 }
