@@ -1,15 +1,13 @@
 package com.zbj.finance.datapipeline.mr;
 
-import org.apache.hive.hcatalog.streaming.DelimitedInputWriter;
-import org.apache.hive.hcatalog.streaming.HiveEndPoint;
-import org.apache.hive.hcatalog.streaming.StreamingConnection;
-import org.apache.hive.hcatalog.streaming.TransactionBatch;
+import org.apache.hive.hcatalog.streaming.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
 import java.util.HashMap;
@@ -216,25 +214,11 @@ public class HiveWriter {
                         isWriting = true;
                         String eventType = getEventType(record);
                         if (eventType.equalsIgnoreCase("INSERT")) {
-                            TransactionBatch tb = conn.fetchTransactionBatch(10, inputWriter);
-                            tb.beginNextTransaction();
-                            String delimitedRecord = genDelimitedRecord(record);
-                            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | insert record : " + delimitedRecord);
-                            tb.write(delimitedRecord.getBytes());
-                            tb.commit();
-                            tb.close();
+                            processInsert(conn, inputWriter, record);
                         } else if (eventType.equalsIgnoreCase("UPDATE")) {
-                            stmt = sqlconn.createStatement();
-                            String updateSql = genUpdateSql(record);
-                            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | update sql : " + updateSql);
-                            stmt.executeUpdate(updateSql);
-                            stmt.close();
+                            stmt = processUpdate(sqlconn, stmt, record, conn, inputWriter);
                         } else if (eventType.equalsIgnoreCase("DELETE")) {
-                            stmt = sqlconn.createStatement();
-                            String deleteSql = genDeleteSql(record);
-                            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | delete sql : " + deleteSql);
-                            stmt.executeUpdate(deleteSql);
-                            stmt.close();
+                            stmt = processDelete(sqlconn, stmt, record);
                         } else {
                             LOG.warn("invalid eventtype. " + eventType);
                         }
@@ -266,6 +250,33 @@ public class HiveWriter {
                 LOG.info("hive-processor down.");
                 System.exit(1);
             }
+        }
+
+        private Statement processDelete(Connection sqlconn, Statement stmt, String record) throws SQLException {
+            stmt = sqlconn.createStatement();
+            String deleteSql = genDeleteSql(record);
+            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | delete sql : " + deleteSql);
+            stmt.executeUpdate(deleteSql);
+            stmt.close();
+            return stmt;
+        }
+
+        private Statement processUpdate(Connection sqlconn, Statement stmt, String record, StreamingConnection conn, DelimitedInputWriter inputWriter) throws StreamingException, SQLException, InterruptedException {
+            String updateSql = genUpdateSql(record);
+            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | update sql : " + updateSql);
+            stmt = processDelete(sqlconn, stmt, record);
+            processInsert(conn, inputWriter, record);
+            return stmt;
+        }
+
+        private void processInsert(StreamingConnection conn, DelimitedInputWriter inputWriter, String record) throws StreamingException, InterruptedException {
+            TransactionBatch tb = conn.fetchTransactionBatch(10, inputWriter);
+            tb.beginNextTransaction();
+            String delimitedRecord = genDelimitedRecord(record);
+            System.out.println((new Date()) + " ThreadId:" + Thread.currentThread().getId() + " | insert record : " + delimitedRecord);
+            tb.write(delimitedRecord.getBytes());
+            tb.commit();
+            tb.close();
         }
     }
 }
