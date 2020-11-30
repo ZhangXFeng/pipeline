@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.mr;
+package com.mycompany.bigdata.datapipeline.mr;
 
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
@@ -8,11 +8,11 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
+import java.net.InetSocketAddress;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-
-public class ClusterCanalClient extends AbstractCanalClient {
+public class SimpleCanalClient extends AbstractCanalClient {
     private static final Properties props = new Properties();
     private Producer<String, String> producer;
     private String topic;
@@ -25,10 +25,11 @@ public class ClusterCanalClient extends AbstractCanalClient {
         }
     }
 
-    public ClusterCanalClient(String destination, String topic, Producer producer) {
+
+    public SimpleCanalClient(String destination, String topic, Producer producer) {
         super(destination);
-        this.topic = topic;
         this.producer = producer;
+        this.topic = topic;
     }
 
     @Override
@@ -42,7 +43,7 @@ public class ClusterCanalClient extends AbstractCanalClient {
         }
     }
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws Exception {
         Properties kafkaProps = new Properties();
         kafkaProps.put("bootstrap.servers", props.getProperty("kafka.bootstrap.servers"));
         kafkaProps.put("acks", "all");
@@ -54,15 +55,15 @@ public class ClusterCanalClient extends AbstractCanalClient {
         kafkaProps.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
         Producer<String, String> producer = new KafkaProducer<String, String>(kafkaProps);
+        // 根据ip，直接创建链接，无HA的功能
         String destination = props.getProperty("canal.destination");
-        String zkUrls = props.getProperty("canal.zookeeper.urls");
+        int port = Integer.parseInt(props.getProperty("canal.port"));
+        CanalConnector connector = CanalConnectors.newSingleConnector(new InetSocketAddress(props.getProperty("canal.host"),
+                port), destination, "", "");
 
-        CanalConnector connector = CanalConnectors.newClusterConnector(zkUrls, destination, "", "");
-
-        final ClusterCanalClient clientTest = new ClusterCanalClient(destination, props.getProperty("kafka.topic"), producer);
+        final SimpleCanalClient clientTest = new SimpleCanalClient(destination, props.getProperty("kafka.topic"), producer);
         clientTest.setConnector(connector);
         clientTest.start();
-
         Runtime.getRuntime().addShutdownHook(new Thread() {
 
             public void run() {
@@ -77,5 +78,7 @@ public class ClusterCanalClient extends AbstractCanalClient {
             }
 
         });
+        clientTest.thread.join();
     }
+
 }

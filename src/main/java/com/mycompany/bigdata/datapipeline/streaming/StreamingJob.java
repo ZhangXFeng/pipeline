@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.streaming;
+package com.mycompany.bigdata.datapipeline.streaming;
 
 import kafka.serializer.StringDecoder;
 import org.apache.kafka.common.serialization.StringDeserializer;

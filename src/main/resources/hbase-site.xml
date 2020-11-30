@@ -157,7 +157,7 @@
 
     <property>
         <name>hbase.rootdir</name>
-        <value>hdfs://hdp05.d1.jr-zbj.com:8020/apps/hbase/data</value>
+        <value>hdfs://hdp05:8020/apps/hbase/data</value>
     </property>
 
     <property>
@@ -197,7 +197,7 @@
 
     <property>
         <name>hbase.zookeeper.quorum</name>
-        <value>hdp04.d1.jr-zbj.com,hdp03.d1.jr-zbj.com,hdp02.d1.jr-zbj.com</value>
+        <value>hdp04,hdp03,hdp02</value>
     </property>
 
     <property>

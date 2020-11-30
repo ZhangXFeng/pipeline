@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.mr;
+package com.mycompany.bigdata.datapipeline.mr;
 
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;

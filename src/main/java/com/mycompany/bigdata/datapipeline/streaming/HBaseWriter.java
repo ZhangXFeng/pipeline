@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.streaming;
+package com.mycompany.bigdata.datapipeline.streaming;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;

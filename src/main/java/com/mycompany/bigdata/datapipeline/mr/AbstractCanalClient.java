@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.mr;
+package com.mycompany.bigdata.datapipeline.mr;
 
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.protocol.CanalEntry;

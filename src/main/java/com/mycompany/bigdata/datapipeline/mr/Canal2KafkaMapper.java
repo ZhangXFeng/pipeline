@@ -1,21 +1,26 @@
-package com.zbj.finance.datapipeline.mr;
+package com.mycompany.bigdata.datapipeline.mr;
 
 import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Properties;
-import java.util.concurrent.Future;
 
-public class SimpleCanalClient extends AbstractCanalClient {
+/**
+ * Created by zhangxiaofeng on 2017/12/6.
+ */
+public class Canal2KafkaMapper extends Mapper<Text, Text, Text, Text> {
+    protected final static Logger logger = LoggerFactory.getLogger(Canal2KafkaMapper.class);
     private static final Properties props = new Properties();
-    private Producer<String, String> producer;
-    private String topic;
+    private SimpleCanalClient clientTest;
 
     static {
         try {
@@ -25,25 +30,8 @@ public class SimpleCanalClient extends AbstractCanalClient {
         }
     }
 
-
-    public SimpleCanalClient(String destination, String topic, Producer producer) {
-        super(destination);
-        this.producer = producer;
-        this.topic = topic;
-    }
-
     @Override
-    protected void pushToExternalSystem(String key, String record) {
-        ProducerRecord producerRecord = new ProducerRecord(topic, key, record);
-        Future<RecordMetadata> future = producer.send(producerRecord);
-        try {
-            future.get();
-        } catch (Exception e) {
-            logger.warn("future.get error. " + record, e);
-        }
-    }
-
-    public static void main(String args[]) throws Exception {
+    protected void setup(Context context) throws IOException, InterruptedException {
         Properties kafkaProps = new Properties();
         kafkaProps.put("bootstrap.servers", props.getProperty("kafka.bootstrap.servers"));
         kafkaProps.put("acks", "all");
@@ -55,13 +43,12 @@ public class SimpleCanalClient extends AbstractCanalClient {
         kafkaProps.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
         Producer<String, String> producer = new KafkaProducer<String, String>(kafkaProps);
-        // 根据ip，直接创建链接，无HA的功能
         String destination = props.getProperty("canal.destination");
         int port = Integer.parseInt(props.getProperty("canal.port"));
         CanalConnector connector = CanalConnectors.newSingleConnector(new InetSocketAddress(props.getProperty("canal.host"),
                 port), destination, "", "");
 
-        final SimpleCanalClient clientTest = new SimpleCanalClient(destination, props.getProperty("kafka.topic"), producer);
+        clientTest = new SimpleCanalClient(destination, props.getProperty("kafka.topic"), producer);
         clientTest.setConnector(connector);
         clientTest.start();
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -78,7 +65,14 @@ public class SimpleCanalClient extends AbstractCanalClient {
             }
 
         });
-        clientTest.thread.join();
     }
 
+    @Override
+    protected void map(Text key, Text value, Context context) throws IOException, InterruptedException {
+        context.progress();
+    }
+
+    @Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+    }
 }

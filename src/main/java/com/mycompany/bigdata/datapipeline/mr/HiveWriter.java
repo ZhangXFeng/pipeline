@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.mr;
+package com.mycompany.bigdata.datapipeline.mr;
 
 import org.apache.hive.hcatalog.streaming.*;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package com.zbj.finance.datapipeline.streaming;
+package com.mycompany.bigdata.datapipeline.streaming;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

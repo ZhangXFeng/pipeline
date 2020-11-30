@@ -214,22 +214,22 @@
 
     <property>
         <name>dfs.namenode.http-address.ns1.nn1</name>
-        <value>hdp02.d1.jr-zbj.com:50070</value>
+        <value>hdp02:50070</value>
     </property>
 
     <property>
         <name>dfs.namenode.http-address.ns1.nn2</name>
-        <value>hdp03.d1.jr-zbj.com:50070</value>
+        <value>hdp03:50070</value>
     </property>
 
     <property>
         <name>dfs.namenode.https-address.ns1.nn1</name>
-        <value>hdp02.d1.jr-zbj.com:50470</value>
+        <value>hdp02:50470</value>
     </property>
 
     <property>
         <name>dfs.namenode.https-address.ns1.nn2</name>
-        <value>hdp03.d1.jr-zbj.com:50470</value>
+        <value>hdp03:50470</value>
     </property>
 
     <property>
@@ -245,12 +245,12 @@
 
     <property>
         <name>dfs.namenode.rpc-address.ns1.nn1</name>
-        <value>hdp02.d1.jr-zbj.com:8020</value>
+        <value>hdp02:8020</value>
     </property>
 
     <property>
         <name>dfs.namenode.rpc-address.ns1.nn2</name>
-        <value>hdp03.d1.jr-zbj.com:8020</value>
+        <value>hdp03:8020</value>
     </property>
 
     <property>
@@ -260,7 +260,7 @@
 
     <property>
         <name>dfs.namenode.shared.edits.dir</name>
-        <value>qjournal://hdp04.d1.jr-zbj.com:8485;hdp02.d1.jr-zbj.com:8485;hdp03.d1.jr-zbj.com:8485/ns1</value>
+        <value>qjournal://hdp04:8485;hdp02:8485;hdp03:8485/ns1</value>
     </property>
 
     <property>
