@@ -16,9 +16,6 @@ MR程序来将kafka里的数据同步到hive。这里我们使用了Hive HCatalo
 https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions, Hive HCatalog Streaming API
 相关内容参看https://cwiki.apache.org/confluence/display/Hive/Streaming+Data+Ingest
 
-# 项目地址
-https://git.zhubajie.la/zhangxiaofeng/pipeline
-
 # 代码结构说明
 根据上文所诉,本项目包含3个独立的程序:同步canal数据到kafka的MR程序、同步kafka数据到hbase
 的spark streaming程序以及同步kafka数据到hive的MR程序,下面对这3个程序做详细说明。
