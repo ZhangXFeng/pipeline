@@ -27,7 +27,7 @@ https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions, Hive HCatalo
 的数据,kafka是保证被客户端顺序消费的,这样的话,我们就可以保证对于同一条数据的更新操作是按顺序重放的。发到kafka中
 的数据的value的格式为:database={schemaName},table={tableName},eventType={变更类型}  id={变更后的值},type={数据类型},update={true/false},isKey={true/false},
 一个真实的示例形如:
-database=ottertest,table=test,eventType=DELETE	id=20150,type=int(11),update=false,isKey=true	name=snow,type=varchar(255),update=false,isKey=false	password=BIGdata_2013,type=varchar(255),update=false,isKey=false	email=abc@zbj.com,type=varchar(255),update=false,isKey=false	phone=15618378988,type=varchar(255),update=false,isKey=false	time=2017-12-28 10:07:49,type=datetime,update=false,isKey=false
+database=ottertest,table=test,eventType=DELETE	id=20150,type=int(11),update=false,isKey=true	name=snow,type=varchar(255),update=false,isKey=false	password=BIGdata_2013,type=varchar(255),update=false,isKey=false	email=abc@mycompany.com,type=varchar(255),update=false,isKey=false	phone=15618378988,type=varchar(255),update=false,isKey=false	time=2017-12-28 10:07:49,type=datetime,update=false,isKey=false
 
 ### 同步kafka数据到hbase的spark streaming程序
 该程序的入口为StreamingJob.java,入口类的主要功能是拿到kafka中的数据,将这些数据交给对应
